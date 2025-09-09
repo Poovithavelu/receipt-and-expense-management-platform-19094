@@ -2,6 +2,9 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.4.8'
 	id 'io.spring.dependency-management' version '1.1.7'
+	// Static analysis plugins
+	id 'checkstyle'
+	id 'com.github.spotbugs' version '6.0.27'
 }
 
 group = 'com.example'
@@ -26,6 +29,41 @@ dependencies {
 	runtimeOnly 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// Configure Checkstyle
+checkstyle {
+	toolVersion = '10.18.2'
+	configDirectory = file("$rootDir/config/checkstyle")
+	config = resources.text.fromFile("$rootDir/config/checkstyle/checkstyle.xml")
+	ignoreFailures = false
+	showViolations = true
+}
+tasks.withType(Checkstyle).configureEach {
+	reports {
+		xml.required = true
+		html.required = true
+	}
+}
+
+// Configure SpotBugs
+spotbugs {
+	toolVersion = '4.9.0'
+	excludeFilter = file("$rootDir/config/spotbugs/exclude.xml")
+	showProgress = true
+	effort = 'max'
+	reportLevel = 'low'
+}
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+	reports {
+		xml.required = true
+		html.required = true
+	}
+}
+
+// Hook analysis into `check`
+tasks.named('check') {
+	dependsOn 'checkstyleMain', 'checkstyleTest', 'spotbugsMain', 'spotbugsTest'
 }
 
 tasks.named('test') {
